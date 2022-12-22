@@ -1,16 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
+import { InjectModel } from '@nestjs/mongoose';
 
 import { Product } from './product.model';
+import { Model } from 'mongoose';
 @Injectable()
 export class ProductsService {
   private products: Product[] = []; //estamos diciendo que queremos un array de elementos tipo Product (la clase modelo que creamos en product.model.ts)
   // le agregamos el private para que no pueda ser accedido desde otro lugar que esta clase.
-  insertProduct(title: string, product: string, price: number) {
+  //model is a mongoose type. Now that we added the access modified: Private, and that makes the productModel to be a property.
+  constructor(
+    @InjectModel('Product') private readonly productModel: Model<Product>,
+  ) {}
+
+  async insertProduct(title: string, desc: string, price: number) {
     const id = uuidv4();
-    const newProduct = new Product(id, title, product, price);
-    this.products.push(newProduct); //method for pushing a new product into the products list
-    return String(id);
+    const newProduct = new this.productModel({
+      title: title,
+      description: desc,
+      price,
+    });
+    //we used this in the CRUD with no DB part
+    //this.products.push(newProduct); //method for pushing a new product into the products list
+
+    //Now when we use Mongoose and MongoDB, and becayse we have created a property based in mongoose model, now we can use the method of the property based in mongoose method, like .save()
+    //remember that mongoose methods return a promise.
+    const result = await newProduct.save();
+    console.log(result);
+    return result.id as string; //with this last part : "as string" we indicate that specifically the response will yield a string.
   }
 
   getProducts() {

@@ -15,10 +15,14 @@ export class ProductsController {
     //you are using the type as a class. Also, we are adding the access modifier "private" for making the property directly available without having to declare it.
   }
   @Post()
-  addProduct(
+  async addProduct(
     @Body() requestBody: { title: string; description: string; price: number },
   ) {
-    const generatedId = this.productsService.insertProduct(
+    const generatedId = await this.productsService.insertProduct(
+      //note await is really important here becayse insertProduct returns a promise that comes from products.service.
+      //if you do not put an await here, the return in lines below will be triggered but without content.
+      //consequently, we wait for the productsService.inserProduct response which is the generatedId.
+      // and what i will return as a response from the post request is the id:generatedId; but generatedId needs to arrive first. Thats why we have to handle with async await (or .then)
       requestBody.title,
       requestBody.description,
       requestBody.price,
