@@ -14,7 +14,7 @@ export class ProductsService {
   ) {}
 
   async insertProduct(title: string, desc: string, price: number) {
-    const id = uuidv4();
+    //const id = uuidv4();
     const newProduct = new this.productModel({
       title: title,
       description: desc,
@@ -26,29 +26,40 @@ export class ProductsService {
     //Now when we use Mongoose and MongoDB, and becayse we have created a property based in mongoose model, now we can use the method of the property based in mongoose method, like .save()
     //remember that mongoose methods return a promise.
     const result = await newProduct.save();
-    console.log(result);
+
     return result.id as string; //with this last part : "as string" we indicate that specifically the response will yield a string.
   }
 
-  getProducts() {
+  async getProducts() {
+    const products = await this.productModel.find().exec();
     //return this.products; //object and arrays are reference types in JS / This will return a pointer to the same list memory. Not good idea to return something that is outside the service. Better woould be to create a copy so we can handle it internally from the service
-    return [...this.products]; // this way creates a copy of the original list content (the objects) and returns it.
+
+    return products.map((prod) => ({
+      id: prod.id,
+      title: prod.title,
+      description: prod.description,
+      price: prod.price,
+    })); // this way creates a copy of the original list content (the objects) and returns it.
   }
 
-  getSingleProduct(id: string) {
-    const product = this.findProduct(id)[0]; //retorna una array
+  async getSingleProduct(id: string) {
+    const product = await this.findProduct(id);
 
-    return { ...product };
+    return {
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+    };
   }
 
-  updateProduct(
+  async updateProduct(
     productId: string,
     title: string,
     description: string,
     price: number,
   ) {
-    const [product, index] = this.findProduct(productId); //destructuring of an array
-    const updatedProduct = { ...product };
+    const updatedProduct = await this.findProduct(productId); //destructuring of an array
 
     if (title) {
       updatedProduct.title = title;
@@ -60,26 +71,34 @@ export class ProductsService {
       updatedProduct.price = price;
     }
 
-    this.products[index] = updatedProduct; //nota que aquí estamos usando el original, no una copia.
+    // this.products[index] = updatedProduct; //nota que aquí estamos usando el original, no una copia.
+    updatedProduct.save();
   }
 
-  deleteProduct(id: string): string {
-    const [product, index] = this.findProduct(id);
-    this.products.splice(index, 1);
-    return `item ${id} deleted`;
+  async deleteProduct(id: string) {
+    const result = await this.productModel.deleteOne({ _id: id }).exec();
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('Element not found');
+    }
+    return null;
   }
 
-  private findProduct(id: string): [Product, number] {
+  private async findProduct(id: string): Promise<Product> {
     //nota que retorna una array tipo tuple; de exactamente 2 tipos de datos.
-
-    const productIndex = this.products.findIndex((p) => p.id === id);
-    const product = this.products[productIndex];
+    let product;
+    try {
+      //productModel has been injected by the imports section in the products controller file.
+      //remember that is a property.
+      product = await this.productModel.findById(id);
+    } catch (e) {
+      throw new NotFoundException('could not find ID');
+    }
 
     if (!product) {
       throw new NotFoundException(`Product ${id} not found`);
     }
 
-    return [product, productIndex];
+    return product;
   }
 }
 
