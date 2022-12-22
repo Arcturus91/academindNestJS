@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Product } from './product.model';
@@ -19,8 +19,50 @@ export class ProductsService {
   }
 
   getSingleProduct(id: string) {
-    const productsList = [...this.products];
-    return productsList.find((p) => p.id === id);
+    const product = this.findProduct(id)[0]; //retorna una array
+
+    return { ...product };
+  }
+
+  updateProduct(
+    productId: string,
+    title: string,
+    description: string,
+    price: number,
+  ) {
+    const [product, index] = this.findProduct(productId); //destructuring of an array
+    const updatedProduct = { ...product };
+
+    if (title) {
+      updatedProduct.title = title;
+    }
+    if (description) {
+      updatedProduct.description = description;
+    }
+    if (price) {
+      updatedProduct.price = price;
+    }
+
+    this.products[index] = updatedProduct; //nota que aquí estamos usando el original, no una copia.
+  }
+
+  deleteProduct(id: string): string {
+    const [product, index] = this.findProduct(id);
+    this.products.splice(index, 1);
+    return `item ${id} deleted`;
+  }
+
+  private findProduct(id: string): [Product, number] {
+    //nota que retorna una array tipo tuple; de exactamente 2 tipos de datos.
+
+    const productIndex = this.products.findIndex((p) => p.id === id);
+    const product = this.products[productIndex];
+
+    if (!product) {
+      throw new NotFoundException(`Product ${id} not found`);
+    }
+
+    return [product, productIndex];
   }
 }
 

@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('products')
@@ -29,4 +37,26 @@ export class ProductsController {
   getProduct(@Param('id') prodId: string) {
     return this.productsService.getSingleProduct(prodId);
   }
+
+  @Patch(':id')
+  updateProduct(
+    @Param('id') prodId: string,
+    @Body('title') prodTitle: string,
+    @Body('description') prodDesc: string,
+    @Body('price') prodPrice: number,
+  ) {
+    this.productsService.updateProduct(prodId, prodTitle, prodDesc, prodPrice);
+    return null; // because we don't need to send back data accordingly to this example.
+  }
+
+  @Delete(':id')
+  removeProduct(@Param('id') prodId: string) {
+    return this.productsService.deleteProduct(prodId);
+  }
 }
+
+//patch is for partially updating. I want merge. Not replace everything. I wanna use the resource as a base.
+//put for replacing the resource entirely.
+
+//en el controlador yo creo lo que voy a hacer, en el servicio yo creo el detalle de eso qe wuiero hacer.
+//el módulo los une.
